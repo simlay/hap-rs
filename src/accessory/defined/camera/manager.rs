@@ -103,7 +103,7 @@ where
     /// setup_endpoints to create proper handshake with iOS device
     /// Current accessory contract doesnt allow to self modify Characteristic and locks
     /// are created when adding accessory to the server
-    pub async fn build<S>(self, server: S) -> Result<StreamManager<MP>, StreamManagerError>
+    pub async fn build<S>(self, server: &S) -> Result<StreamManager<MP>, StreamManagerError>
     where
         S: Server,
     {
