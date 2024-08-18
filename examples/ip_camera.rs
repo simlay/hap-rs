@@ -4,8 +4,11 @@ use hap::{
     accessory::{
         camera::{
             manager::StreamManagerBuilder,
-            media::{gstreamer::{Gstreamer, StreamConfig}, MediaProvider},
-            protocol::VIDEO_CODEC_PARAM_PROFILE_ID_TYPES_BASELINE,
+            media::{
+                gstreamer::{Gstreamer, StreamConfig},
+                MediaProvider,
+            },
+            protocol::{VIDEO_CODEC_PARAM_LEVEL_TYPES_TYPE3_1, VIDEO_CODEC_PARAM_PROFILE_ID_TYPES_BASELINE},
             CameraAccessory,
         },
         lightbulb::LightbulbAccessory,
@@ -18,6 +21,8 @@ use hap::{
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    env_logger::init();
+
     let mut storage = FileStorage::current_dir().await?;
 
     let config = match storage.load_config().await {
@@ -30,7 +35,7 @@ async fn main() -> Result<()> {
             let config = Config {
                 pin: Pin::new([1, 1, 1, 2, 2, 3, 3, 3])?,
                 name: "My IP Camera".into(),
-                device_id: MacAddress::from([12, 21, 32, 42, 52, 61]),
+                device_id: MacAddress::from([12, 21, 32, 42, 52, 62]),
                 category: AccessoryCategory::IpCamera,
                 ..Default::default()
             };
@@ -49,14 +54,16 @@ async fn main() -> Result<()> {
     )?;
     let video = serde_json::json!({
         "resolutions": [
-            [ 1920, 1080, 60 ],
+            [ 1920, 1080, 20 ],
+            [ 1024, 768, 20],
+            [ 640, 480, 20 ],
         ],
         "codec": {
             "profiles": [
-                0, 1, 2
+                VIDEO_CODEC_PARAM_PROFILE_ID_TYPES_BASELINE
             ],
             "levels": [
-                0, 1, 2
+                VIDEO_CODEC_PARAM_LEVEL_TYPES_TYPE3_1
             ]
         }
     });
@@ -80,7 +87,8 @@ async fn main() -> Result<()> {
             srtp: true,
         },
         // Change this ip address to whatever your ipcamera ip address is.
-        pipeline: "rtspsrc onvif-mode=true location=rtsp://127.0.0.1:8080/h264.sdp ! rtpjitterbuffer ! decodebin".into(),
+        pipeline: "rtspsrc onvif-mode=true location=rtsp://127.0.0.1:8080/h264.sdp ! rtpjitterbuffer ! decodebin"
+            .into(),
     };
     let provider = Gstreamer::new(vec![stream_config]).expect("Failed to create gstreamer");
 
@@ -91,9 +99,6 @@ async fn main() -> Result<()> {
         .build(&server)
         .await
         .expect("Failed to build stream manager");
-
-
-    env_logger::init();
 
     let _ = handle.await?;
 
